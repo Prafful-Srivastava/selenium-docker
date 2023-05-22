@@ -26,7 +26,7 @@ ping -n %RETRY_INTERVAL% 127.0.0.1 > nul
 FOR /F "tokens=3 delims=: " %%G IN ('curl -s http://%HUB_HOST%:4444/wd/hub/status ^| findstr /C:"\"ready\": true"') DO (
   IF "%%G"=="true" (
     echo Selenium Hub is ready. Starting test execution...
-    REM start the java command
+    REM Start the Java command
     java -cp selenium-docker.jar:selenium-docker-tests.jar:libs/* -DHUB_HOST=%HUB_HOST% -DBROWSER=%BROWSER% org.testng.TestNG %MODULE%
     exit /b 0
   )
