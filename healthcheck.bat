@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+@echo off
 # Environment Variables
 # HUB_HOST
 # BROWSER
