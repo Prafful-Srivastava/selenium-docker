@@ -27,4 +27,4 @@ RUN wget https://s3.amazonaws.com/selenium-docker/healthcheck/healthcheck.sh
 # HUB_HOST
 # MODULE
 
-ENTRYPOINT sh healthcheck.sh
+ENTRYPOINT bat healthcheck.bat
