@@ -1,45 +1,35 @@
 @echo off
-# Environment Variables
-# HUB_HOST
-# BROWSER
-# MODULE
-set -e
-echo "Checking if hub is ready - $HUB_HOST"
+REM Environment Variables
+REM HUB_HOST
+REM BROWSER
+REM MODULE
 
-MAX_RETRIES=10
-RETRY_INTERVAL=1
-retry_count=0
+SET MAX_RETRIES=10
+SET RETRY_INTERVAL=1
+SET RETRY_COUNT=0
 
-# Function to exit the script with an error message
-exit_with_error() {
-  local message=$1
-  echo "Error: $message"
-  exit 1
-}
+REM Function to exit the script with an error message
+:exit_with_error
+echo Error: %1
+exit /b 1
 
-while (( retry_count < MAX_RETRIES ))
-do
-  response=$(curl -s http://$HUB_HOST:4444/wd/hub/status)
-  ready=$(echo "$response" | jq -r .value.ready)
+:retry
+SET /A RETRY_COUNT+=1
 
-  if [[ "$ready" == "true" ]]; then
-    break
-  fi
+IF %RETRY_COUNT% GTR %MAX_RETRIES% (
+  CALL :exit_with_error "Selenium Hub did not become ready after %MAX_RETRIES% retries."
+)
 
-  retry_count=$((retry_count + 1))
+REM Sleep for the specified interval before the next retry
+ping -n %RETRY_INTERVAL% 127.0.0.1 > nul
 
-  if (( retry_count > MAX_RETRIES )); then
-    exit_with_error "Selenium Hub did not become ready after $MAX_RETRIES retries."
-  fi
+FOR /F "tokens=3 delims=: " %%G IN ('curl -s http://%HUB_HOST%:4444/wd/hub/status ^| findstr /C:"\"ready\": true"') DO (
+  IF "%%G"=="true" (
+    echo Selenium Hub is ready. Starting test execution...
+    REM start the java command
+    java -cp selenium-docker.jar:selenium-docker-tests.jar:libs/* -DHUB_HOST=%HUB_HOST% -DBROWSER=%BROWSER% org.testng.TestNG %MODULE%
+    exit /b 0
+  )
+)
 
-  # Sleep for the specified interval before the next retry
-  sleep $RETRY_INTERVAL
-done
-
-echo "Selenium Hub is ready. Starting test execution..."
-
-# start the java command
-java -cp selenium-docker.jar;selenium-docker-tests.jar;libs/* \
-    -DHUB_HOST=$HUB_HOST \
-    -DBROWSER=$BROWSER \
-    org.testng.TestNG $MODULE
+CALL :retry
